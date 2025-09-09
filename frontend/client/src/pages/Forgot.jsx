@@ -43,22 +43,22 @@ const Forgot = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-gray-900'>
+    <div className='min-h-screen flex items-center justify-center bg-[#121212]'>
       <motion.div 
-        className='p-8 rounded-lg shadow-lg w-full max-w-md backdrop-blur-sm bg-opacity-80 bg-[#1A1A1D] border border-gray-800'
+        className='p-8 rounded-lg shadow-lg w-full max-w-md backdrop-blur-sm bg-opacity-80 bg-[#1E1E1E] border border-gray-700'
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
-        <motion.h2 className='text-xl font-semibold text-center mb-2 text-[#50c878]' variants={itemVariants}>
-          PROIMG
+        <motion.h2 className='text-xl font-semibold text-center mb-2 text-[#E94560]' variants={itemVariants}>
+          MangaVault
         </motion.h2>
         
-        <motion.h2 className='text-2xl font-bold text-white text-center mb-6' variants={itemVariants}>
+        <motion.h2 className='text-2xl font-bold text-[#FFFFFF] text-center mb-6' variants={itemVariants}>
           Forgot Password
         </motion.h2>
         
-        <motion.p className='text-gray-300 text-sm text-center mb-6' variants={itemVariants}>
+        <motion.p className='text-[#B3B3B3] text-sm text-center mb-6' variants={itemVariants}>
           Enter your email address
         </motion.p>
         
@@ -75,7 +75,7 @@ const Forgot = () => {
         
         <form onSubmit={submitHandler}>
           <motion.div className='mb-6' variants={itemVariants}>
-            <label htmlFor="email" className='block text-sm font-medium text-gray-300 mb-1'>
+            <label htmlFor="email" className='block text-sm font-medium text-[#B3B3B3] mb-1'>
               EMAIL
             </label>
             <div className='relative'>
@@ -88,7 +88,7 @@ const Forgot = () => {
                 required 
                 type="email" 
                 id='email' 
-                className='w-full py-2 pl-10 pr-3 border border-gray-700 bg-gray-900 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#50c878] focus:border-transparent' 
+                className='w-full py-2 pl-10 pr-3 border border-gray-600 bg-[#121212] rounded-md text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#E94560] focus:border-transparent' 
                 placeholder='Enter your email'
               />
             </div>
@@ -96,7 +96,7 @@ const Forgot = () => {
           
           <motion.button 
             type='submit' 
-            className='w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#50c878] hover:bg-[#3daf63] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#50c878] transition-colors duration-200 flex items-center justify-center'
+            className='w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#FFFFFF] bg-[#E94560] hover:bg-[#d63851] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E94560] transition-colors duration-200 flex items-center justify-center'
             disabled={btnLoading}
             variants={itemVariants}
             whileHover={{ scale: 1.02 }}
@@ -107,9 +107,9 @@ const Forgot = () => {
         </form>
         
         <motion.div className='mt-6 text-center' variants={itemVariants}>
-          <div className='text-gray-300'>
+          <div className='text-[#B3B3B3]'>
             Remember your password?{' '}
-            <Link to="/login" className='font-medium text-[#50c878] hover:underline'>
+            <Link to="/login" className='font-medium text-[#E94560] hover:underline'>
               Sign in
             </Link>
           </div>

@@ -28,8 +28,11 @@ app.use(cookieParser());
 
 
 import userRoutes from './routes/userRoutes.js';
+import mangaRoutes from './routes/mangaRoutes.js';
+
 
 app.use('/api/user', userRoutes);       
+app.use("/api/manga" , mangaRoutes);
 
 app.listen(port , ()=>{
     console.log(`Server is running on http://localhost:${port}`);

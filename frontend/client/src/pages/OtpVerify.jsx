@@ -75,22 +75,22 @@ const OtpVerify = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gradient-to-b from-black to-gray-900'>
+    <div className='min-h-screen flex items-center justify-center bg-[#121212]'>
       <motion.div 
-        className='p-8 rounded-lg shadow-lg w-full max-w-md backdrop-blur-sm bg-opacity-80 bg-[#1A1A1D] border border-gray-800'
+        className='p-8 rounded-lg shadow-lg w-full max-w-md backdrop-blur-sm bg-opacity-80 bg-[#1E1E1E] border border-gray-700'
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
-        <motion.h2 className='text-xl font-semibold text-center mb-2 text-[#50c878]' variants={itemVariants}>
-          PROIMG
+        <motion.h2 className='text-xl font-semibold text-center mb-2 text-[#E94560]' variants={itemVariants}>
+          MangaVault
         </motion.h2>
         
-        <motion.h2 className='text-2xl font-bold text-white text-center mb-4' variants={itemVariants}>
+        <motion.h2 className='text-2xl font-bold text-[#FFFFFF] text-center mb-4' variants={itemVariants}>
           Verify OTP
         </motion.h2>
         
-        <motion.p className='text-gray-300 text-sm text-center mb-6' variants={itemVariants}>
+        <motion.p className='text-[#B3B3B3] text-sm text-center mb-6' variants={itemVariants}>
           Enter the 6-digit verification code sent to your email
         </motion.p>
         
@@ -107,7 +107,7 @@ const OtpVerify = () => {
         
         <form onSubmit={submitHandler}>
           <motion.div className='mb-4' variants={itemVariants}>
-            <label htmlFor="otp" className='block text-sm font-medium text-gray-300 mb-1'>
+            <label htmlFor="otp" className='block text-sm font-medium text-[#B3B3B3] mb-1'>
               VERIFICATION CODE
             </label>
             <div className='relative'>
@@ -127,7 +127,7 @@ const OtpVerify = () => {
                 required 
                 type="text" 
                 id='otp' 
-                className='w-full py-2 pl-10 pr-3 border border-gray-700 bg-gray-900 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-[#50c878] focus:border-transparent tracking-widest text-center font-mono' 
+                className='w-full py-2 pl-10 pr-3 border border-gray-600 bg-[#121212] rounded-md text-[#FFFFFF] focus:outline-none focus:ring-2 focus:ring-[#E94560] focus:border-transparent tracking-widest text-center font-mono' 
                 placeholder='Enter 6-digit code'
                 maxLength={6}
                 pattern="\d{6}"
@@ -136,14 +136,14 @@ const OtpVerify = () => {
           </motion.div>
           
           <motion.div className='mb-6 text-center' variants={itemVariants}>
-            <p className={`text-sm ${timeLeft > 60 ? 'text-gray-400' : 'text-red-400'}`}>
+            <p className={`text-sm ${timeLeft > 60 ? 'text-[#B3B3B3]' : 'text-red-400'}`}>
               Code expires in {formatTime(timeLeft)}
             </p>
           </motion.div>
           
           <motion.button 
             type='submit' 
-            className='w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#50c878] hover:bg-[#3daf63] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#50c878] transition-colors duration-200 flex items-center justify-center'
+            className='w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-[#FFFFFF] bg-[#E94560] hover:bg-[#d63851] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E94560] transition-colors duration-200 flex items-center justify-center'
             disabled={btnLoading}
             variants={itemVariants}
             whileHover={{ scale: 1.02 }}
@@ -157,13 +157,13 @@ const OtpVerify = () => {
           <button 
             onClick={handleResendOtp} 
             disabled={timeLeft > 0}
-            className={`text-sm font-medium ${timeLeft > 0 ? 'text-gray-500 cursor-not-allowed' : 'text-[#50c878] hover:underline cursor-pointer'}`}
+            className={`text-sm font-medium ${timeLeft > 0 ? 'text-gray-500 cursor-not-allowed' : 'text-[#E94560] hover:underline cursor-pointer'}`}
           >
             {timeLeft > 0 ? "Resend code available after countdown" : "Didn't receive the code? Resend"}
           </button>
           
-          <div className='mt-4 text-gray-300 text-sm'>
-            <Link to="/login" className='font-medium text-[#50c878] hover:underline'>
+          <div className='mt-4 text-[#B3B3B3] text-sm'>
+            <Link to="/login" className='font-medium text-[#E94560] hover:underline'>
               Return to login
             </Link>
           </div>
