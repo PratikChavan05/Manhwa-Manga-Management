@@ -21,6 +21,10 @@ const mangaSchema = new mongoose.Schema({
   favorite: { type: Boolean, default: false },
   readingTime: { type: Number },
   embedding: { type: [Number], default: [] },  
+  releaseDay: { type: String, enum: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] ,
+    required:true,
+  },
+
 }, { timestamps: true });
 
 export default mongoose.model("Manga", mangaSchema);

@@ -2,6 +2,8 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import Manga from "../models/mangaModel.js";
 import TryCatch from "../utils/TryCatch.js";
+import fs from "fs";
+
 let puppeteer;
 try {
   puppeteer = require("puppeteer");
@@ -175,7 +177,7 @@ export const getCoverFromWebsite = async (
   return null;
 };
 export const addManga = TryCatch(async (req, res) => {
-  const { title, currentChapter, website, status, notes } = req.body;
+  const { title, currentChapter, website, status, notes, releaseDay } = req.body;
   if (!title || !website) {
     return res.status(400).json({ message: "Title and website are required" });
   }
@@ -194,6 +196,7 @@ export const addManga = TryCatch(async (req, res) => {
     title,
     currentChapter: currentChapter || 0,
     website,
+    releaseDay,
     status: status || "Reading",
     notes,
     coverImage: coverImage || `https://placehold.co/300x420?text=${encodeURIComponent(title)}`,
@@ -211,7 +214,8 @@ export const getMangaById = TryCatch(async (req, res) => {
 });
 export const updateManga = TryCatch(async (req, res) => {
   const { id } = req.params;
-  const{ title, currentChapter, website, status, notes } = req.body;
+  const{ title, currentChapter, website, status, notes ,rating,totalChapters,genre } = req.body;
+  console.log(req.body)
   const manga = await Manga.findOne({ _id: id, userId: req.user._id });
   if (!manga) return res.status(404).json({ message: "Manga not found" });
   manga.title = title || manga.title;
@@ -219,6 +223,9 @@ export const updateManga = TryCatch(async (req, res) => {
   manga.website = website || manga.website;
   manga.status = status || manga.status;
   manga.notes = notes || manga.notes;
+  manga.rating = rating !== undefined ? rating : manga.rating;
+  manga.totalChapters = totalChapters !== undefined ? totalChapters : manga.totalChapters;
+  manga.genre = genre || manga.genre;
   manga.updatedAt = new Date();
   await manga.save();
   res.json({ message: "Manga updated", manga });
@@ -290,3 +297,104 @@ export const getMangaStats = TryCatch(async (req, res) => {
     averageRating: avgRating[0]?.avgRating || 0
   });
 });
+
+import Redis from "ioredis";
+import { scrapeAllSites } from "../utils/scraperService.js";
+
+const redisClient = new Redis();
+
+export const getTrendingManga = async (req, res) => {
+  try {
+    const refresh = req.query.refresh === 'true';
+
+    if (!refresh) {
+      const cached = await redisClient.get('trending_manga');
+      if (cached) {
+        console.log('⚡ Serving from Redis cache');
+        return res.json(JSON.parse(cached));
+      }
+    }
+
+    const results = await scrapeAllSites();
+
+    await redisClient.set('trending_manga', JSON.stringify({
+      count: results.length,
+      mangas: results
+    }), 'EX', 3600);
+
+    res.json({ count: results.length, mangas: results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+import cron from 'node-cron';
+import { User } from "../models/userModel.js";
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MY_GMAIL,
+    pass: process.env.MY_PASS
+  }
+});
+
+const dayMap = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6
+};
+
+const notifyUsersOfNewChapters = async () => {
+  const today = new Date().getDay(); 
+  const todayName = Object.keys(dayMap).find(key => dayMap[key] === today);
+
+  const mangas = await Manga.find({ releaseDay: todayName });
+
+  const userMap = {};
+  mangas.forEach(manga => {
+    if (!userMap[manga.userId]) userMap[manga.userId] = [];
+    userMap[manga.userId].push(manga);
+  });
+
+  for (const userId in userMap) {
+    const user = await User.findById(userId);
+    if (!user) continue;
+
+    const mangaList = userMap[userId]
+      .map(m => `"${m.title}" -> ${m.website}`)
+      .join("\n");
+
+    const mailOptions = {
+      from: process.env.MY_GMAIL,
+      to: user.email,
+      subject: `New Chapter Updates for Today`,
+      text: `Hey ${user.name},\n\nThe following mangas have new chapters today:\n\n${mangaList}`
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Notifications sent to ${user.email}`);
+    } catch (err) {
+      console.error(`❌ Failed to send email to ${user.email}:`, err.message);
+    }
+  }
+};
+
+cron.schedule("0 9 * * *", async () => {
+  await notifyUsersOfNewChapters();
+});
+
+export const sendWeeklyNotifications = async (req, res) => {
+  try {
+    await notifyUsersOfNewChapters();
+    res.json({ message: "Notifications sent successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

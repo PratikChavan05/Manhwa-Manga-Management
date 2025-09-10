@@ -37,7 +37,7 @@ const MangaCard = ({ manga }) => {
         {imageSource === "/placeholder.svg" ? (
           <div className="text-[#B3B3B3] flex flex-col items-center justify-center p-4">
             <ImageIcon size={48} />
-            <span className="text-sm mt-2 text-center">No Cover Available</span>
+            <span className="text-lg mt-2 text-center">{manga.title}</span>
           </div>
         ) : (
           <img

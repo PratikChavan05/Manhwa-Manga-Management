@@ -57,13 +57,13 @@ const MangaList = () => {
           <h1 className="text-4xl font-bold">My Manga Collection</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          {/* <button
             onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
             className="p-2 rounded-lg transition-all duration-200 hover:scale-105"
             style={{ backgroundColor: "#1E1E1E", color: "#B3B3B3" }}
           >
             {viewMode === "grid" ? <List className="w-5 h-5" /> : <Grid3X3 className="w-5 h-5" />}
-          </button>
+          </button> */}
           <button
             onClick={handleRefresh}
             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
