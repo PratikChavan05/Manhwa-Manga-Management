@@ -29,6 +29,7 @@
     "fs": "^0.0.1-security",
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
+    "lru-cache": "^11.2.1",
     "mongoose": "^8.17.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",

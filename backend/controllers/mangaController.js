@@ -297,32 +297,32 @@ export const getMangaStats = TryCatch(async (req, res) => {
     averageRating: avgRating[0]?.avgRating || 0
   });
 });
-
-import Redis from "ioredis";
+import { LRUCache } from "lru-cache";
 import { scrapeAllSites } from "../utils/scraperService.js";
 
-const redisClient = new Redis();
+const cache = new LRUCache({
+  max: 100,
+  ttl: 1000 * 60 * 60 // 1 hour
+});
 
 export const getTrendingManga = async (req, res) => {
   try {
-    const refresh = req.query.refresh === 'true';
+    const refresh = req.query.refresh === "true";
 
     if (!refresh) {
-      const cached = await redisClient.get('trending_manga');
+      const cached = cache.get("trending_manga");
       if (cached) {
-        console.log('⚡ Serving from Redis cache');
-        return res.json(JSON.parse(cached));
+        console.log("⚡ Serving from LRU cache");
+        return res.json(cached);
       }
     }
 
     const results = await scrapeAllSites();
 
-    await redisClient.set('trending_manga', JSON.stringify({
-      count: results.length,
-      mangas: results
-    }), 'EX', 3600);
+    const payload = { count: results.length, mangas: results };
+    cache.set("trending_manga", payload);
 
-    res.json({ count: results.length, mangas: results });
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
