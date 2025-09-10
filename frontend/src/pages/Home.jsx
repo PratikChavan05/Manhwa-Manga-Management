@@ -173,9 +173,9 @@ const TrendingMangaCard = ({ manga, index, onImageError, hasImageError }) => {
     onImageError(index);
   };
 
-  const openInNewTab = (url,manga) => {
+  const openInNewTab = (url) => {
     console.log("Opening URL:", url);
-    console.log(manga)
+    
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -200,7 +200,7 @@ const TrendingMangaCard = ({ manga, index, onImageError, hasImageError }) => {
         {/* Overlay with external link */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <button
-            onClick={() => openInNewTab(manga.url,manga)}
+            onClick={() => openInNewTab(manga.url)}
             className="bg-[#E94560] hover:bg-[#E94560]/90 p-2 rounded-full transition-colors"
           >
             <ExternalLink size={16} className="text-white" />

@@ -29,13 +29,26 @@ app.use(cookieParser());
 
 import userRoutes from './routes/userRoutes.js';
 import mangaRoutes from './routes/mangaRoutes.js';
+import healthRoutes from "./routes/health.js";
+
 
 
 app.use('/api/user', userRoutes);       
 app.use("/api/manga" , mangaRoutes);
+app.use("/api/check", healthRoutes);
 
-import healthRoutes from "./routes/health.js";
-app.use("/api", healthRoutes);
+
+app.use((req, res, next) => {
+  console.log("Incoming request:", req.path);
+  next();
+});
+
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "/frontend/dist")));
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "frontend", "dist", "index.html"));
+});
+
 
 
 app.listen(port , ()=>{
