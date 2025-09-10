@@ -166,6 +166,14 @@ const AddManga = () => {
       newErrors.releaseDay = "Please select a release day";
     }
 
+    if(!formData.website){
+      newErrors.website="Website URL is required"
+    }
+
+     if (!formData.currentChapter) {
+       newErrors.currentChapter = "Reading chapter is required";
+     }
+
     if (formData.website && !isValidUrl(formData.website)) {
       newErrors.website = "Please enter a valid URL";
     }
@@ -317,6 +325,7 @@ const AddManga = () => {
             placeholder="https://example.com"
             value={form.website}
             onChange={handleInputChange}
+            required
             color="#FFB400"
             error={errors.website}
           />
@@ -360,7 +369,7 @@ const AddManga = () => {
               icon={
                 <BookOpen className="w-5 h-5" style={{ color: "#FFB400" }} />
               }
-              label="Current Chapter"
+              label="Reading Chapter"
               type="number"
               name="currentChapter"
               placeholder="0"
@@ -368,6 +377,7 @@ const AddManga = () => {
               onChange={handleInputChange}
               color="#FFB400"
               min="0"
+              required
               error={errors.currentChapter}
             />
 
@@ -378,7 +388,7 @@ const AddManga = () => {
               label="Total Chapters"
               type="number"
               name="totalChapters"
-              placeholder="0"
+              placeholder="0(Optional)"
               value={form.totalChapters}
               onChange={handleInputChange}
               color="#E94560"
@@ -427,7 +437,7 @@ const AddManga = () => {
             label="Cover Image URL"
             type="url"
             name="coverImage"
-            placeholder="https://example.com/cover.jpg"
+            placeholder="https://example.com/cover.jpg(Optional)"
             value={form.coverImage}
             onChange={handleInputChange}
             color="#E94560"
