@@ -6,6 +6,7 @@ With MangaVault, you can:
 ✅ Track your last read chapter
 ✅ Add notes & reading status
 ✅ Get smart recommendations
+✅ Get updates when new chapters release
 
 ✨ Stay organized. Keep reading. Never lose progress again!
 
