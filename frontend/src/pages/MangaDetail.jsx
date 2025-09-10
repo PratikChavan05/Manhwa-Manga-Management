@@ -510,7 +510,7 @@ const MangaDetail = () => {
               <div className="space-y-3">
                 <label className="block text-[#B3B3B3] text-sm font-bold flex items-center gap-2">
                   <BookOpen size={16} />
-                  Current Chapter
+                  Reading Chapter
                 </label>
                 {isEditing ? (
                   <div className="space-y-2">

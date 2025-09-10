@@ -177,7 +177,7 @@ export const getCoverFromWebsite = async (
   return null;
 };
 export const addManga = TryCatch(async (req, res) => {
-  const { title, currentChapter, website, status, notes, releaseDay } = req.body;
+  const { title, currentChapter, website, status, notes, releaseDay ,totalChapters} = req.body;
   if (!title || !website) {
     return res.status(400).json({ message: "Title and website are required" });
   }
@@ -199,6 +199,7 @@ export const addManga = TryCatch(async (req, res) => {
     releaseDay,
     status: status || "Reading",
     notes,
+    totalChapters: totalChapters || 0,
     coverImage: coverImage || `https://placehold.co/300x420?text=${encodeURIComponent(title)}`,
   });
   res.status(201).json({ message: "Manga added successfully", manga });
@@ -235,7 +236,11 @@ export const updateMangaChapter = TryCatch(async (req, res) => {
   const { currentChapter } = req.body;
   const manga = await Manga.findOne({ _id: id, userId: req.user._id });
   if (!manga) return res.status(404).json({ message: "Manga not found" });
+  if(currentChapter>manga.totalChapters){
+    manga.totalChapters=currentChapter;
+  }
   if (currentChapter !== undefined) {
+
     manga.currentChapter = currentChapter;
     manga.updatedAt = new Date();
     await manga.save();
