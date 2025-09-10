@@ -34,6 +34,10 @@ import mangaRoutes from './routes/mangaRoutes.js';
 app.use('/api/user', userRoutes);       
 app.use("/api/manga" , mangaRoutes);
 
+import healthRoutes from "./routes/health.js";
+app.use("/api", healthRoutes);
+
+
 app.listen(port , ()=>{
     console.log(`Server is running on http://localhost:${port}`);
     connectDb();
