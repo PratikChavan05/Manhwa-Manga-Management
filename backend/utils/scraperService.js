@@ -13,15 +13,21 @@ export const scrapeMangadex = async () => {
     const { data } = await axios.get(url);
 
     return data.data.map(manga => {
-      const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
-      const cover = coverArt
+      const coverArt = manga.relationships.find(rel => rel.type === "cover_art");
+      const coverUrl = coverArt
         ? `https://uploads.mangadex.org/covers/${manga.id}/${coverArt.attributes.fileName}`
         : null;
+
+      // 🚀 Wrap cover in proxy
+      const proxiedCover = coverUrl
+        ? `/api/proxy/cover?url=${encodeURIComponent(coverUrl)}`
+        : null;
+
       return {
-        title: manga.attributes.title.en || 'Unknown',
+        title: manga.attributes.title.en || "Unknown",
         url: `https://mangadex.org/title/${manga.id}`,
-        cover,
-        source: 'Mangadex'
+        cover: proxiedCover,
+        source: "Mangadex"
       };
     });
   } catch (err) {
@@ -29,6 +35,7 @@ export const scrapeMangadex = async () => {
     return [];
   }
 };
+
 
 export const scrapeJikan = async () => {
   try {

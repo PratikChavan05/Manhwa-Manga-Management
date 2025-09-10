@@ -37,6 +37,25 @@ app.use('/api/user', userRoutes);
 app.use("/api/manga" , mangaRoutes);
 app.use("/api/check", healthRoutes);
 
+app.get("/api/proxy/cover", async (req, res) => {
+  try {
+    const url = req.query.url;
+    if (!url || !url.startsWith("https://uploads.mangadex.org/")) {
+      return res.status(400).json({ error: "Invalid MangaDex URL" });
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch cover");
+
+    res.set("Content-Type", response.headers.get("content-type"));
+    const buffer = await response.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error("❌ Proxy error:", err.message);
+    res.status(500).json({ error: "Image proxy failed" });
+  }
+});
+
 
 app.use((req, res, next) => {
   console.log("Incoming request:", req.path);
