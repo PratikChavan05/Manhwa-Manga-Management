@@ -3,6 +3,13 @@ import * as cheerio from "cheerio";
 import Manga from "../models/mangaModel.js";
 import TryCatch from "../utils/TryCatch.js";
 
+import puppeteerCore from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
+import puppeteerExtra from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
+// use stealth plugin (avoids blocks)
+puppeteerExtra.use(StealthPlugin());
 
 const defaultHeaders = {
   "User-Agent":
@@ -89,17 +96,31 @@ const extractCoverFromCheerio = ($, base) => {
   return null;
 };
 
-import puppeteer from "puppeteer";
-import chromium from "@sparticuz/chromium";
+// ---- Puppeteer Setup ----
+
+// Detect production (Render) vs local
+const isRender = process.env.RENDER || process.env.NODE_ENV === "production";
+
+const launchBrowser = async () => {
+  if (isRender) {
+    // ✅ Render-friendly puppeteer-core + chromium
+    return await puppeteerExtra.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  } else {
+    // ✅ Local dev uses full puppeteer
+    const puppeteer = await import("puppeteer");
+    return await puppeteer.default.launch({
+      headless: true,
+    });
+  }
+};
 
 const getCoverFromPuppeteer = async (url) => {
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(),
-    headless: chromium.headless, // ensures it works in serverless
-  });
-
+  const browser = await launchBrowser();
   const page = await browser.newPage();
   await page.setUserAgent(defaultHeaders["User-Agent"]);
   await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
@@ -124,8 +145,7 @@ const getCoverFromPuppeteer = async (url) => {
   return cover ? new URL(cover, url).href : null;
 };
 
-
-// Unified entrypoint
+// ---- Unified Entry ----
 export const getCoverFromWebsite = async (
   url,
   options = { puppeteerFallback: false }
@@ -162,6 +182,7 @@ export const getCoverFromWebsite = async (
   return null;
 };
 
+// ---- Controller ----
 export const addManga = TryCatch(async (req, res) => {
   const { title, currentChapter, website, status, notes, releaseDay, totalChapters } = req.body;
 
@@ -181,15 +202,15 @@ export const addManga = TryCatch(async (req, res) => {
     coverImage: `https://placehold.co/300x420?text=${encodeURIComponent(title)}`, 
   });
 
-  
   res.status(201).json({ message: "Manga added successfully", manga });
 
+  // Async background update for cover
   (async () => {
     try {
       const coverImage =
-        (await getCoverFromPuppeteer(website)) ||
+        (await getCoverFromPuppeteer(website).catch(() => null)) ||
         (await getCoverFromWebsite(website, { puppeteerFallback: false })) ||
-        manga.coverImage; 
+        manga.coverImage;
 
       if (coverImage !== manga.coverImage) {
         manga.coverImage = coverImage;
@@ -201,6 +222,7 @@ export const addManga = TryCatch(async (req, res) => {
     }
   })();
 });
+
 
 
 export const getMyMangas = TryCatch(async (req, res) => {

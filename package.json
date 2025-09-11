@@ -5,13 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node backend/index.js",
-    "dev": " nodemon backend/index.js",
+    "dev": "nodemon backend/index.js",
     "build": "npm install && cd frontend && npm install && npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@sparticuz/chromium": "^138.0.2",
     "axios": "^1.11.0",
@@ -27,7 +23,6 @@
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "form-data": "^4.0.4",
-    "fs": "^0.0.1-security",
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "lru-cache": "^11.2.1",
@@ -36,7 +31,6 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.5",
     "openai": "^5.20.0",
-    "puppeteer": "^24.19.0",
     "puppeteer-core": "^24.20.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
@@ -44,5 +38,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }

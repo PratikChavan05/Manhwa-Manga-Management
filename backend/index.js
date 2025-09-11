@@ -8,7 +8,6 @@ import cloudinary from 'cloudinary';
 import axios from 'axios';
 import cors from 'cors';
 import multer from 'multer';
-import fs from 'fs';
 import FormData from 'form-data';
 dotenv.config();
 const port=process.env.PORT || 5000;
