@@ -2,7 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import Manga from "../models/mangaModel.js";
 import TryCatch from "../utils/TryCatch.js";
-import puppeteer from "puppeteer";
+
 
 const defaultHeaders = {
   "User-Agent":
@@ -89,12 +89,17 @@ const extractCoverFromCheerio = ($, base) => {
   return null;
 };
 
-// Puppeteer fallback
+import puppeteer from "puppeteer";
+import chromium from "@sparticuz/chromium";
+
 const getCoverFromPuppeteer = async (url) => {
   const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless, // ensures it works in serverless
   });
+
   const page = await browser.newPage();
   await page.setUserAgent(defaultHeaders["User-Agent"]);
   await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
@@ -118,6 +123,7 @@ const getCoverFromPuppeteer = async (url) => {
   await browser.close();
   return cover ? new URL(cover, url).href : null;
 };
+
 
 // Unified entrypoint
 export const getCoverFromWebsite = async (
