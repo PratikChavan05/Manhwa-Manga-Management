@@ -8,9 +8,9 @@ import chromium from "@sparticuz/chromium";
 import puppeteerExtra from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
-// use stealth plugin (avoids blocks)
 puppeteerExtra.use(StealthPlugin());
 
+// ---- Default headers ----
 const defaultHeaders = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
@@ -21,7 +21,7 @@ const defaultHeaders = {
   Connection: "keep-alive",
 };
 
-// Resolve relative/absolute URLs
+// ---- Utils ----
 const resolveUrl = (src, base) => {
   try {
     return new URL(src, base).href;
@@ -30,7 +30,6 @@ const resolveUrl = (src, base) => {
   }
 };
 
-// Try to fetch page with Axios
 const tryFetchHtml = async (url) => {
   const res = await axios.get(url, {
     headers: defaultHeaders,
@@ -42,7 +41,7 @@ const tryFetchHtml = async (url) => {
   return res.data;
 };
 
-// Extract cover from Cheerio
+// ---- Cheerio cover extractor ----
 const extractCoverFromCheerio = ($, base) => {
   const metaSelectors = [
     "meta[property='og:image']",
@@ -61,7 +60,6 @@ const extractCoverFromCheerio = ($, base) => {
   const linkImg = $("link[rel='image_src']").attr("href");
   if (linkImg) return resolveUrl(linkImg, base);
 
-  // JSON-LD block
   $("script[type='application/ld+json']").each((_, el) => {
     try {
       const j = JSON.parse($(el).html());
@@ -71,7 +69,6 @@ const extractCoverFromCheerio = ($, base) => {
     } catch {}
   });
 
-  // Fallback to <img>
   const imgSelectors = [
     "img[class*=cover]",
     "img[class*=thumbnail]",
@@ -96,22 +93,25 @@ const extractCoverFromCheerio = ($, base) => {
   return null;
 };
 
-// ---- Puppeteer Setup ----
-
-// Detect production (Render) vs local
+// ---- Puppeteer setup ----
 const isRender = process.env.RENDER || process.env.NODE_ENV === "production";
 
 const launchBrowser = async () => {
   if (isRender) {
-    // ✅ Render-friendly puppeteer-core + chromium
+    const executablePath =
+      (await chromium.executablePath()) ||
+      process.env.CHROME_EXECUTABLE_PATH ||
+      process.env.PUPPETEER_EXECUTABLE_PATH;
+
+    console.log("🚀 Puppeteer using executablePath:", executablePath);
+
     return await puppeteerExtra.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath,
       headless: chromium.headless,
     });
   } else {
-    // ✅ Local dev uses full puppeteer
     const puppeteer = await import("puppeteer");
     return await puppeteer.default.launch({
       headless: true,
@@ -123,6 +123,8 @@ const getCoverFromPuppeteer = async (url) => {
   const browser = await launchBrowser();
   const page = await browser.newPage();
   await page.setUserAgent(defaultHeaders["User-Agent"]);
+
+  console.log("🌐 Puppeteer navigating to:", url);
   await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
 
   const cover = await page.evaluate(() => {
@@ -142,10 +144,12 @@ const getCoverFromPuppeteer = async (url) => {
   });
 
   await browser.close();
+
+  console.log("🔎 Puppeteer extracted cover:", cover);
   return cover ? new URL(cover, url).href : null;
 };
 
-// ---- Unified Entry ----
+// ---- Unified cover fetcher ----
 export const getCoverFromWebsite = async (
   url,
   options = { puppeteerFallback: false }
@@ -184,7 +188,15 @@ export const getCoverFromWebsite = async (
 
 // ---- Controller ----
 export const addManga = TryCatch(async (req, res) => {
-  const { title, currentChapter, website, status, notes, releaseDay, totalChapters } = req.body;
+  const {
+    title,
+    currentChapter,
+    website,
+    status,
+    notes,
+    releaseDay,
+    totalChapters,
+  } = req.body;
 
   if (!title || !website) {
     return res.status(400).json({ message: "Title and website are required" });
@@ -199,16 +211,20 @@ export const addManga = TryCatch(async (req, res) => {
     status: status || "Reading",
     notes,
     totalChapters: totalChapters || 0,
-    coverImage: `https://placehold.co/300x420?text=${encodeURIComponent(title)}`, 
+    coverImage: `https://placehold.co/300x420?text=${encodeURIComponent(title)}`,
   });
 
   res.status(201).json({ message: "Manga added successfully", manga });
 
-  // Async background update for cover
+  // ---- Async background cover update ----
   (async () => {
     try {
+      console.log(`🔄 Fetching cover for ${title}...`);
       const coverImage =
-        (await getCoverFromPuppeteer(website).catch(() => null)) ||
+        (await getCoverFromPuppeteer(website).catch((err) => {
+          console.warn("❌ Puppeteer failed:", err.message);
+          return null;
+        })) ||
         (await getCoverFromWebsite(website, { puppeteerFallback: false })) ||
         manga.coverImage;
 
@@ -216,14 +232,14 @@ export const addManga = TryCatch(async (req, res) => {
         manga.coverImage = coverImage;
         await manga.save();
         console.log(`✅ Cover updated for manga: ${manga.title}`);
+      } else {
+        console.log(`ℹ️ No new cover found for: ${manga.title}`);
       }
     } catch (err) {
       console.warn(`❌ Failed to update cover for ${manga.title}:`, err.message);
     }
   })();
 });
-
-
 
 export const getMyMangas = TryCatch(async (req, res) => {
   const mangas = await Manga.find({ userId: req.user._id }).sort({ updatedAt: -1 });

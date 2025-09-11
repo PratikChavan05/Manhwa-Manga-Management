@@ -247,7 +247,7 @@ const AddManga = () => {
 
       await addManga(submissionData);
       navigate("/");
-      toast.success("Manga added successfully!");
+      toast.success("Manga added successfully!Cover image will appear shortly if a valid URL is provided.");
     } catch (error) {
       console.error("Failed to add manga:", error);
       setErrors({ submit: "Failed to add manga. Please try again." });
