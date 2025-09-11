@@ -15,6 +15,8 @@ import {
 import { FaRoad } from "react-icons/fa";
 import { addManga } from "../api/mangaApi";
 import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+
 
 const releaseDays = [
   "Sunday",
@@ -237,7 +239,7 @@ const AddManga = () => {
     setIsSubmitting(true);
     try {
       // Convert empty strings to appropriate values for API
-      const submissionData = {
+      const submissionData ={
         ...form,
         currentChapter: form.currentChapter ? parseInt(form.currentChapter) : 0,
         totalChapters: form.totalChapters ? parseInt(form.totalChapters) : 0,
@@ -245,6 +247,7 @@ const AddManga = () => {
 
       await addManga(submissionData);
       navigate("/");
+      toast.success("Manga added successfully!");
     } catch (error) {
       console.error("Failed to add manga:", error);
       setErrors({ submit: "Failed to add manga. Please try again." });

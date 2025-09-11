@@ -2,14 +2,8 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import Manga from "../models/mangaModel.js";
 import TryCatch from "../utils/TryCatch.js";
-import fs from "fs";
+import puppeteer from "puppeteer";
 
-let puppeteer;
-try {
-  puppeteer = require("puppeteer");
-} catch (e) {
-  console.warn("⚠️ Puppeteer not installed. Install with: npm i puppeteer");
-}
 const defaultHeaders = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
@@ -19,6 +13,8 @@ const defaultHeaders = {
   Referer: "https://google.com/",
   Connection: "keep-alive",
 };
+
+// Resolve relative/absolute URLs
 const resolveUrl = (src, base) => {
   try {
     return new URL(src, base).href;
@@ -26,17 +22,11 @@ const resolveUrl = (src, base) => {
     return src;
   }
 };
+
+// Try to fetch page with Axios
 const tryFetchHtml = async (url) => {
   const res = await axios.get(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Referer": url,
-      "Cache-Control": "no-cache",
-      "Pragma": "no-cache",
-    },
+    headers: defaultHeaders,
     timeout: 15000,
     maxRedirects: 10,
     validateStatus: (status) => status < 500,
@@ -44,32 +34,37 @@ const tryFetchHtml = async (url) => {
   if (res.status >= 400) throw new Error(`HTTP ${res.status}`);
   return res.data;
 };
+
+// Extract cover from Cheerio
 const extractCoverFromCheerio = ($, base) => {
-  const og =
-    $('meta[property="og:image"]').attr("content") ||
-    $('meta[property="og:image:url"]').attr("content") ||
-    $('meta[name="og:image"]').attr("content") ||
-    $('meta[name="og:image:url"]').attr("content");
-  if (og) return resolveUrl(og, base);
-  const tw =
-    $('meta[name="twitter:image"]').attr("content") ||
-    $('meta[name="twitter:image:src"]').attr("content");
-  if (tw) return resolveUrl(tw, base);
+  const metaSelectors = [
+    "meta[property='og:image']",
+    "meta[property='og:image:url']",
+    "meta[name='og:image']",
+    "meta[name='og:image:url']",
+    "meta[name='twitter:image']",
+    "meta[name='twitter:image:src']",
+  ];
+
+  for (const sel of metaSelectors) {
+    const content = $(sel).attr("content");
+    if (content) return resolveUrl(content, base);
+  }
+
   const linkImg = $("link[rel='image_src']").attr("href");
   if (linkImg) return resolveUrl(linkImg, base);
-  const ld = $("script[type='application/ld+json']")
-    .map((i, el) => $(el).html())
-    .get();
-  for (const txt of ld) {
+
+  // JSON-LD block
+  $("script[type='application/ld+json']").each((_, el) => {
     try {
-      const j = JSON.parse(txt);
+      const j = JSON.parse($(el).html());
       const img =
         j?.image || j?.thumbnailUrl || (Array.isArray(j) && j[0]?.image);
-      if (img)
-        return resolveUrl(Array.isArray(img) ? img[0] : img, base);
-    } catch {
-    }
-  }
+      if (img) return resolveUrl(Array.isArray(img) ? img[0] : img, base);
+    } catch {}
+  });
+
+  // Fallback to <img>
   const imgSelectors = [
     "img[class*=cover]",
     "img[class*=thumbnail]",
@@ -90,8 +85,11 @@ const extractCoverFromCheerio = ($, base) => {
       }
     }
   }
+
   return null;
 };
+
+// Puppeteer fallback
 const getCoverFromPuppeteer = async (url) => {
   const browser = await puppeteer.launch({
     headless: "new",
@@ -100,75 +98,56 @@ const getCoverFromPuppeteer = async (url) => {
   const page = await browser.newPage();
   await page.setUserAgent(defaultHeaders["User-Agent"]);
   await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
+
   const cover = await page.evaluate(() => {
-    const og = document.querySelector('meta[property="og:image"]')?.content
-            || document.querySelector('meta[name="twitter:image"]')?.content
-            || document.querySelector('link[rel="image_src"]')?.href;
+    const og =
+      document.querySelector('meta[property="og:image"]')?.content ||
+      document.querySelector('meta[name="twitter:image"]')?.content ||
+      document.querySelector('link[rel="image_src"]')?.href;
     if (og) return og;
-    const el = document.querySelector('img[class*=cover], img[class*=thumb], img[id*=cover], img[id*=thumb]');
+
+    const el = document.querySelector(
+      "img[class*=cover], img[class*=thumb], img[id*=cover], img[id*=thumb]"
+    );
     if (el) return el.dataset?.src || el.src;
+
     const first = document.querySelector("img");
-    return first ? (first.dataset?.src || first.src) : null;
+    return first ? first.dataset?.src || first.src : null;
   });
+
   await browser.close();
-  return cover || null;
+  return cover ? new URL(cover, url).href : null;
 };
+
+// Unified entrypoint
 export const getCoverFromWebsite = async (
   url,
   options = { puppeteerFallback: false }
 ) => {
   try {
     if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-    let html;
+
+    let cover = null;
+
     try {
-      html = await tryFetchHtml(url);
-    } catch (err) {
-      console.warn("❌ Axios fetch failed:", err.message);
-      if (!options.puppeteerFallback) return null;
-    }
-    if (html) {
+      const html = await tryFetchHtml(url);
       const $ = cheerio.load(html);
-      const cover = extractCoverFromCheerio($, url);
+      cover = extractCoverFromCheerio($, url);
       if (cover) {
         console.log("✅ Cover found by cheerio:", cover);
         return cover;
       }
       console.log("ℹ️ No cover found via cheerio for:", url);
+    } catch (err) {
+      console.warn("❌ Axios fetch failed:", err.message);
     }
-    if (options.puppeteerFallback && puppeteer) {
-      try {
-        console.log("⚡ Using Puppeteer fallback for:", url);
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox"],
-        });
-        const page = await browser.newPage();
-        await page.setUserAgent(defaultHeaders["User-Agent"]);
-        await page.goto(url, {
-          waitUntil: "networkidle2",
-          timeout: 20000,
-        });
-        const cover = await page.evaluate(() => {
-          const og =
-            document.querySelector("meta[property='og:image']")?.content ||
-            document.querySelector("meta[name='twitter:image']")?.content ||
-            document.querySelector("link[rel='image_src']")?.href;
-          if (og) return og;
-          const el = document.querySelector(
-            "img[class*=cover], img[class*=thumb], img[id*=cover], img[id*=thumb]"
-          );
-          if (el) return el.dataset?.src || el.src || null;
-          const first = document.querySelector("img");
-          return first ? el.dataset?.src || first.src : null;
-        });
-        await browser.close();
-        if (cover) {
-          const absolute = resolveUrl(cover, url);
-          console.log("✅ Cover found by Puppeteer:", absolute);
-          return absolute;
-        }
-      } catch (err) {
-        console.warn("❌ Puppeteer fallback failed:", err.message);
+
+    if (!cover && options.puppeteerFallback) {
+      console.log("⚡ Using Puppeteer fallback for:", url);
+      cover = await getCoverFromPuppeteer(url);
+      if (cover) {
+        console.log("✅ Cover found by Puppeteer:", cover);
+        return cover;
       }
     }
   } catch (err) {
@@ -176,21 +155,14 @@ export const getCoverFromWebsite = async (
   }
   return null;
 };
+
 export const addManga = TryCatch(async (req, res) => {
-  const { title, currentChapter, website, status, notes, releaseDay ,totalChapters} = req.body;
+  const { title, currentChapter, website, status, notes, releaseDay, totalChapters } = req.body;
+
   if (!title || !website) {
     return res.status(400).json({ message: "Title and website are required" });
   }
-  let coverImage = null;
-  try {
-    coverImage = await getCoverFromWebsite(website, { puppeteerFallback: false });
-  } catch (err) {
-    console.warn("Cheerio failed:", err.message);
-  }
-  if (!coverImage && puppeteer) {
-    console.log("Using Puppeteer fallback...");
-    coverImage = await getCoverFromPuppeteer(website);
-  }
+
   const manga = await Manga.create({
     userId: req.user._id,
     title,
@@ -200,10 +172,31 @@ export const addManga = TryCatch(async (req, res) => {
     status: status || "Reading",
     notes,
     totalChapters: totalChapters || 0,
-    coverImage: coverImage || `https://placehold.co/300x420?text=${encodeURIComponent(title)}`,
+    coverImage: `https://placehold.co/300x420?text=${encodeURIComponent(title)}`, 
   });
+
+  
   res.status(201).json({ message: "Manga added successfully", manga });
+
+  (async () => {
+    try {
+      const coverImage =
+        (await getCoverFromPuppeteer(website)) ||
+        (await getCoverFromWebsite(website, { puppeteerFallback: false })) ||
+        manga.coverImage; 
+
+      if (coverImage !== manga.coverImage) {
+        manga.coverImage = coverImage;
+        await manga.save();
+        console.log(`✅ Cover updated for manga: ${manga.title}`);
+      }
+    } catch (err) {
+      console.warn(`❌ Failed to update cover for ${manga.title}:`, err.message);
+    }
+  })();
 });
+
+
 export const getMyMangas = TryCatch(async (req, res) => {
   const mangas = await Manga.find({ userId: req.user._id }).sort({ updatedAt: -1 });
   res.json(mangas);

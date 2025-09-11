@@ -32,6 +32,7 @@ import {
   BookmarkPlus,
   Share,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 const MangaDetail = () => {
   const { id } = useParams();
@@ -60,9 +61,10 @@ const MangaDetail = () => {
     try {
       await updateManga(id, manga);
       setIsEditing(false);
+      toast.success("Manga updated successfully!");
     } catch (error) {
       console.error("Failed to update manga:", error);
-      alert("Failed to update manga. Please try again.");
+      toast.error("Failed to update manga. Please try again.");
     }
   };
 
@@ -91,9 +93,10 @@ const MangaDetail = () => {
     try {
       await deleteManga(id);
       navigate("/");
+      toast.success("Manga deleted successfully!");
     } catch (error) {
       console.error("Failed to delete manga:", error);
-      alert("Failed to delete manga. Please try again.");
+      toast.error("Failed to delete manga. Please try again.");
     }
   };
 
